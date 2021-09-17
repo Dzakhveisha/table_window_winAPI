@@ -1,0 +1,5 @@
+1,
+2, qwerty, , integer
+3, Hello, text
+4, , 9
+5, why, is, not, java, ?

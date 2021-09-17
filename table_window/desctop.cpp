@@ -1,24 +1,31 @@
 #include <windows.h>
-#include <string.h>
 #include <tchar.h>
-#include <gdiplus.h>
-#include <corecrt_math.h>
+#include <string>
+#include <wingdi.h>
+#include <vector>
+#include <fstream>
+#include <regex>
+#include <algorithm>
 
-using namespace Gdiplus;
-#pragma comment (lib,"Gdiplus.lib")
+using namespace std;
+
+#define _CRT_SECURE_NO_WARNINGS
 
 // string const
 static const TCHAR szWindowClass[] = _T("DesktopAppClass");
-static const TCHAR szTitle[] = _T("Moving sprite Window");
-static WCHAR pictureName[] = L"donut.png";
+static const TCHAR szTitle[] = _T("Dynamic table Window");
 
-// brushes
+// brush for window
 const HBRUSH BACKGROUND_BRUSH = CreateSolidBrush(RGB(175, 238, 238));
+// window class
+WNDCLASSEX wcex;
 
-static const int IDT_ANIMATION_TIMER = 1;
-WNDCLASSEX wcex; // window class
+static vector< vector<string> > textVector; // vector of tables strings
+static int rowCount;
+static int colCount;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+void loadTextFromFile();
 
 int WINAPI WinMain(
     _In_ HINSTANCE hInstance,
@@ -62,11 +69,15 @@ int WINAPI WinMain(
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-
     static int cxClient, cyClient;
 
     switch (message)
     {
+  
+    case WM_CREATE: 
+        loadTextFromFile();
+        break;
+
     case WM_SIZE:
     {
         cxClient = LOWORD(lParam);
@@ -80,7 +91,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
 
-        
+        int cellWidth = cxClient / colCount;
+        int cellHeight = cyClient / rowCount; // todo: depends from text length
+
+        for (int i = 0; i < textVector.size(); i++) {
+            for (int j = 0; j < textVector[i].size(); j++) {
+                wstring text = wstring(textVector[i][j].begin(), textVector[i][j].end());   //vector<wchar_t>
+                RECT rect = { j * cellWidth, i * cellHeight, (j + 1) * cellWidth , (i + 1) * cellHeight };
+                DrawText(
+                    hdc,
+                    text.c_str(), //const char* for drawing
+                    text.size(),       // text size
+                    &rect,    // rect for drawing (cell)
+                    DT_CENTER      // output parameters
+                );
+            }
+        }
         EndPaint(hWnd, &ps);
     }
     break;
@@ -93,6 +119,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+int maxVectorSize(vector<vector<string>> vector) {
+    int max = 0;
+    for (int i = 0; i < vector.size(); i++)
+        if (vector[i].size() > max) {
+            max = vector[i].size();
+        }
+    return max;
+}
+
+void loadTextFromFile(){
+        ifstream infile("tableText.txt");
+        string line;
+        while (std::getline(infile, line)) {
+            std::regex regex{ R"([,][\s]+)" };
+            std::sregex_token_iterator it{ line.begin(), line.end(), regex, -1 };
+            textVector.emplace_back(vector<string>{it, {}});
+        }
+        rowCount = textVector.size();
+        colCount = maxVectorSize(textVector);
 }
 
 
