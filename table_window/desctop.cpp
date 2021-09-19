@@ -63,7 +63,6 @@ int WINAPI WinMain(
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-
     return (int)msg.wParam;
 }
 
@@ -95,33 +94,36 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         TEXTMETRIC textMetric;
         GetTextMetrics(hdc, &textMetric);
-        int minCellHeight =  textMetric.tmHeight;     // todo: depends from text length
+        int minCellHeight =  textMetric.tmHeight;    
 
         int tableHeight = 0;
 
         for (int i = 0; i < textVector.size(); i++) {
-            int curCellHeight = minCellHeight;
+            int curCellHeight = minCellHeight;  // depends from text length
             for (int j = 0; j < textVector[i].size(); j++) {
                 wstring text = wstring(textVector[i][j].begin(), textVector[i][j].end());   //vector<wchar_t>
                 RECT rect = { j * cellWidth, tableHeight + minCellHeight / 5, (j + 1) * cellWidth , cyClient };
                 int tempHeight = DrawText(
                     hdc,
-                    text.c_str(), //const char* for drawing
-                    text.size(),       // text size
-                    &rect,    // rect for drawing (cell)
-                    DT_CENTER | DT_WORDBREAK | DT_END_ELLIPSIS     // output parameters
+                    text.c_str(),   //const char* for drawing
+                    text.size(),    // text size
+                    &rect,          // rect for drawing 
+                    DT_CENTER | DT_WORDBREAK | DT_END_ELLIPSIS    // output parameters
                 );
                 if (tempHeight > curCellHeight) {
                     curCellHeight = tempHeight;
                 }
             }
             tableHeight += curCellHeight + minCellHeight / 5;
-            MoveToEx(hdc, 0, tableHeight, nullptr);
+            MoveToEx(hdc, 0, tableHeight, nullptr);          // horizontal line after every string of cells
             LineTo(hdc, cxClient, tableHeight);
         }
         
+        MoveToEx(hdc, 0, 0, nullptr); // horizontal line in the top of table
+        LineTo(hdc, cxClient, 0);
+
         for (int j = 0; j < colCount; j++) {
-            MoveToEx(hdc, j * cellWidth, 0, nullptr);
+            MoveToEx(hdc, j * cellWidth, 0, nullptr);   // vertical lines 
             LineTo(hdc, j * cellWidth, tableHeight);
         }
 
@@ -139,7 +141,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-int maxVectorSize(vector<vector<string>> vector) {
+int maxVectorSize(vector<vector<string>> vector) {   //determine the number of columns
     int max = 0;
     for (int i = 0; i < vector.size(); i++)
         if (vector[i].size() > max) {
