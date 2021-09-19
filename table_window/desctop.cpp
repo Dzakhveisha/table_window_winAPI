@@ -16,7 +16,7 @@ static const TCHAR szWindowClass[] = _T("DesktopAppClass");
 static const TCHAR szTitle[] = _T("Dynamic table Window");
 
 // brush for window
-const HBRUSH BACKGROUND_BRUSH = CreateSolidBrush(RGB(175, 238, 238));
+const HBRUSH BACKGROUND_BRUSH = CreateSolidBrush(RGB(255, 255, 255));
 // window class
 WNDCLASSEX wcex;
 
@@ -92,21 +92,39 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         HDC hdc = BeginPaint(hWnd, &ps);
 
         int cellWidth = cxClient / colCount;
-        int cellHeight = cyClient / rowCount; // todo: depends from text length
+
+        TEXTMETRIC textMetric;
+        GetTextMetrics(hdc, &textMetric);
+        int minCellHeight =  textMetric.tmHeight;     // todo: depends from text length
+
+        int tableHeight = 0;
 
         for (int i = 0; i < textVector.size(); i++) {
+            int curCellHeight = minCellHeight;
             for (int j = 0; j < textVector[i].size(); j++) {
                 wstring text = wstring(textVector[i][j].begin(), textVector[i][j].end());   //vector<wchar_t>
-                RECT rect = { j * cellWidth, i * cellHeight, (j + 1) * cellWidth , (i + 1) * cellHeight };
-                DrawText(
+                RECT rect = { j * cellWidth, tableHeight + minCellHeight / 5, (j + 1) * cellWidth , cyClient };
+                int tempHeight = DrawText(
                     hdc,
                     text.c_str(), //const char* for drawing
                     text.size(),       // text size
                     &rect,    // rect for drawing (cell)
-                    DT_CENTER      // output parameters
+                    DT_CENTER | DT_WORDBREAK | DT_END_ELLIPSIS     // output parameters
                 );
+                if (tempHeight > curCellHeight) {
+                    curCellHeight = tempHeight;
+                }
             }
+            tableHeight += curCellHeight + minCellHeight / 5;
+            MoveToEx(hdc, 0, tableHeight, nullptr);
+            LineTo(hdc, cxClient, tableHeight);
         }
+        
+        for (int j = 0; j < colCount; j++) {
+            MoveToEx(hdc, j * cellWidth, 0, nullptr);
+            LineTo(hdc, j * cellWidth, tableHeight);
+        }
+
         EndPaint(hWnd, &ps);
     }
     break;
@@ -141,7 +159,3 @@ void loadTextFromFile(){
         rowCount = textVector.size();
         colCount = maxVectorSize(textVector);
 }
-
-
-
-
